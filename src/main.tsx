@@ -1,8 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { Router } from "./router";
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <h1>Vex</h1>
-  </React.StrictMode>,
-);
+const rootElement = document.getElementById("root");
+
+if (rootElement && !rootElement.innerHTML) {
+  const root = ReactDOM.createRoot(rootElement);
+
+  root.render(
+    <React.StrictMode>
+      <Router />
+    </React.StrictMode>,
+  );
+}
