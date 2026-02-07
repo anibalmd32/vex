@@ -11,6 +11,9 @@
     "check": "bunx biome check --write"
   },
   "dependencies": {
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@mui/material": "7.3.7",
     "@tanstack/react-router": "1.158.4",
     "@tanstack/react-router-devtools": "1.158.4",
     "@tauri-apps/api": "2",

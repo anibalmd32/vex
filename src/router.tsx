@@ -1,4 +1,5 @@
 import { createRouter, RouterProvider } from "@tanstack/react-router";
+import { MaterialUiProvider } from "./integrations/material-ui/MaterialUiProvider";
 import { routeTree } from "./routeTree.gen";
 
 type RouterOptions = {
@@ -17,5 +18,9 @@ const getRouter = (options?: RouterOptions) => {
 
 export const Router = () => {
   const router = getRouter();
-  return <RouterProvider router={router} />;
+  return (
+    <MaterialUiProvider>
+      <RouterProvider router={router} />
+    </MaterialUiProvider>
+  );
 };
