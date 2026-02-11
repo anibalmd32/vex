@@ -1,5 +1,6 @@
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { MaterialUiProvider } from "./integrations/material-ui/MaterialUiProvider";
+import { TanstackQueryProvider } from "./integrations/tanstack-query/TanstackQueryProvider";
 import { routeTree } from "./routeTree.gen";
 
 type RouterOptions = {
@@ -20,7 +21,9 @@ export const Router = () => {
   const router = getRouter();
   return (
     <MaterialUiProvider>
-      <RouterProvider router={router} />
+      <TanstackQueryProvider>
+        <RouterProvider router={router} />
+      </TanstackQueryProvider>
     </MaterialUiProvider>
   );
 };
