@@ -14,6 +14,18 @@ pub fn run() {
             description: "create_test_table",
             sql: include_str!("../../drizzle/0000_supreme_morgan_stark.sql"),
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "create_test_table",
+            sql: include_str!("../../drizzle/0001_productive_lyja.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 3,
+            description: "create_test_table",
+            sql: include_str!("../../drizzle/0002_grey_jackal.sql"),
+            kind: MigrationKind::Up,
         }
     ];
 

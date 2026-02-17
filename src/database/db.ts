@@ -13,7 +13,7 @@ function isSelectQuery(sql: string) {
 export const db = drizzle<typeof schema>(
   async (sql, params, method) => {
     const sqlite = await getDb();
-    let rows: any = [];
+    let rows: unknown = [];
     let results = [];
 
     if (isSelectQuery(sql)) {
@@ -31,11 +31,13 @@ export const db = drizzle<typeof schema>(
       };
     }
 
-    rows = rows.map((row: any) => {
-      return Object.values(row);
-    });
+    rows = Array.isArray(rows)
+      ? rows.map((row: Record<string, unknown>) => {
+          return Object.values(row);
+        })
+      : rows;
 
-    results = method === "all" ? rows : rows[0];
+    results = method === "all" ? rows : Array.isArray(rows) ? rows[0] : rows;
     await sqlite.close();
     return {
       rows: results,
