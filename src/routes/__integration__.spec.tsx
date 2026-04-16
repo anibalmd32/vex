@@ -11,9 +11,49 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import Dock from "../components/AppNavigation/Dock";
 
+/** Route definitions used across all integration tests. */
+const ROUTES = [
+  {
+    path: "/",
+    text: "Home",
+  },
+  {
+    path: "/income",
+    text: 'Hello "/income"!',
+  },
+  {
+    path: "/expenses",
+    text: 'Hello "/expenses"!',
+  },
+  {
+    path: "/debts",
+    text: 'Hello "/debts"!',
+  },
+] as const;
+
+/** Dock navigation items mapped to their target routes. */
+const NAV_ITEMS = [
+  {
+    label: "Inicio",
+    expectedText: "Home",
+  },
+  {
+    label: "Ingresos",
+    expectedText: 'Hello "/income"!',
+  },
+  {
+    label: "Gastos",
+    expectedText: 'Hello "/expenses"!',
+  },
+  {
+    label: "Deudas",
+    expectedText: 'Hello "/debts"!',
+  },
+] as const;
+
 /**
- * Helper: render the full app with a memory-history router starting at the given path.
- * Each call creates a completely isolated router instance so tests don't interfere.
+ * Builds a fully isolated router with all app routes and renders it.
+ * Uses createMemoryHistory so tests never share browser history state.
  */
 function renderApp(initialEntry = "/") {
   const rootRoute = createRootRoute({
@@ -25,39 +65,16 @@ function renderApp(initialEntry = "/") {
     ),
   });
 
-  const indexRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/",
-    component: () => <div>Home</div>,
-  });
-
-  const incomeRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/income",
-    component: () => <div>Hello "/income"!</div>,
-  });
-
-  const expensesRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/expenses",
-    component: () => <div>Hello "/expenses"!</div>,
-  });
-
-  const debtsRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/debts",
-    component: () => <div>Hello "/debts"!</div>,
-  });
-
-  const routeTree = rootRoute.addChildren([
-    indexRoute,
-    incomeRoute,
-    expensesRoute,
-    debtsRoute,
-  ]);
+  const children = ROUTES.map(({ path, text }) =>
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path,
+      component: () => <div>{text}</div>,
+    }),
+  );
 
   const router = createRouter({
-    routeTree,
+    routeTree: rootRoute.addChildren(children),
     history: createMemoryHistory({
       initialEntries: [
         initialEntry,
@@ -68,139 +85,65 @@ function renderApp(initialEntry = "/") {
   return render(<RouterProvider router={router} />);
 }
 
+/** Waits for a text element to appear in the document. */
+async function expectTextVisible(text: string) {
+  await waitFor(() => {
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+}
+
 describe("Route Integration Tests", () => {
   describe("Route Rendering", () => {
-    it("should render the home page at /", async () => {
-      renderApp("/");
-
-      await waitFor(() => {
-        expect(screen.getByText("Home")).toBeInTheDocument();
-      });
-    });
-
-    it("should render the income page at /income", async () => {
-      renderApp("/income");
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/income"!')).toBeInTheDocument();
-      });
-    });
-
-    it("should render the expenses page at /expenses", async () => {
-      renderApp("/expenses");
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/expenses"!')).toBeInTheDocument();
-      });
-    });
-
-    it("should render the debts page at /debts", async () => {
-      renderApp("/debts");
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/debts"!')).toBeInTheDocument();
-      });
+    it.each(ROUTES)("should render $text at $path", async ({ path, text }) => {
+      renderApp(path);
+      await expectTextVisible(text);
     });
   });
 
   describe("Dock Navigation", () => {
-    it("should render the Dock navigation on every route", async () => {
+    it("should render all Dock navigation items", async () => {
       renderApp("/");
 
       await waitFor(() => {
-        expect(screen.getByText("Inicio")).toBeInTheDocument();
-        expect(screen.getByText("Ingresos")).toBeInTheDocument();
-        expect(screen.getByText("Gastos")).toBeInTheDocument();
-        expect(screen.getByText("Deudas")).toBeInTheDocument();
+        for (const { label } of NAV_ITEMS) {
+          expect(screen.getByText(label)).toBeInTheDocument();
+        }
       });
     });
 
-    it("should navigate from home to income when clicking Ingresos", async () => {
+    it.each(
+      NAV_ITEMS.filter((n) => n.label !== "Inicio"),
+    )("should navigate from home to $label", async ({
+      label,
+      expectedText,
+    }) => {
       const user = userEvent.setup();
       renderApp("/");
+      await expectTextVisible("Home");
 
-      await waitFor(() => {
-        expect(screen.getByText("Home")).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText("Ingresos"));
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/income"!')).toBeInTheDocument();
-      });
-    });
-
-    it("should navigate from home to expenses when clicking Gastos", async () => {
-      const user = userEvent.setup();
-      renderApp("/");
-
-      await waitFor(() => {
-        expect(screen.getByText("Home")).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText("Gastos"));
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/expenses"!')).toBeInTheDocument();
-      });
-    });
-
-    it("should navigate from home to debts when clicking Deudas", async () => {
-      const user = userEvent.setup();
-      renderApp("/");
-
-      await waitFor(() => {
-        expect(screen.getByText("Home")).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByText("Deudas"));
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/debts"!')).toBeInTheDocument();
-      });
+      await user.click(screen.getByText(label));
+      await expectTextVisible(expectedText);
     });
 
     it("should navigate between routes: income → expenses → debts", async () => {
       const user = userEvent.setup();
       renderApp("/");
+      await expectTextVisible("Home");
 
-      // Wait for initial render
-      await waitFor(() => {
-        expect(screen.getByText("Home")).toBeInTheDocument();
-      });
-
-      // Navigate to income
-      await user.click(screen.getByText("Ingresos"));
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/income"!')).toBeInTheDocument();
-      });
-
-      // Navigate to expenses
-      await user.click(screen.getByText("Gastos"));
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/expenses"!')).toBeInTheDocument();
-      });
-
-      // Navigate to debts
-      await user.click(screen.getByText("Deudas"));
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/debts"!')).toBeInTheDocument();
-      });
+      const sequence = NAV_ITEMS.filter((n) => n.label !== "Inicio");
+      for (const { label, expectedText } of sequence) {
+        await user.click(screen.getByText(label));
+        await expectTextVisible(expectedText);
+      }
     });
 
     it("should navigate back to home from a sub-route", async () => {
       const user = userEvent.setup();
       renderApp("/income");
-
-      await waitFor(() => {
-        expect(screen.getByText('Hello "/income"!')).toBeInTheDocument();
-      });
+      await expectTextVisible('Hello "/income"!');
 
       await user.click(screen.getByText("Inicio"));
-
-      await waitFor(() => {
-        expect(screen.getByText("Home")).toBeInTheDocument();
-      });
+      await expectTextVisible("Home");
     });
   });
 });
